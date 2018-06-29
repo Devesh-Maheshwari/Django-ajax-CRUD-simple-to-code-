@@ -5,9 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
 </head>
 
 <body>
@@ -45,23 +44,59 @@
     </div>
   </div>
 
-
+  <table id="mytable">
+      <tbody>
 
     {% if company_list %}
 
-    <table id="mytable">
+
 
         {% for c in company_list %}
         <tr>
-            <th>{{ c.company_name }}</th>
-            <th>{{ c.company_location }}</th>
-            <th><a href=""><button>Update</button></a></th>
-            <th><a href="" data-id="{{ c.id }}"><button>Delete</button></a></th>
+            <th class="compname">{{ c.company_name }}</th>
+            <th class="compdesig">{{ c.company_location }}</th>
+            <th>
+                <button type="button" class="update" data-toggle="modal" data-target="#myModal1" data-id="{{ c.id }}">Update</button>
+                <div class="modal" id="myModal1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+
+        <!-- Modal Header -->
+        <div class="modal-header">
+          <h4 class="modal-title">Modal Form</h4>
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+        </div>
+
+        <!-- Modal body -->
+        <div class="modal-body">
+            <form method="POST" id="myform1">
+    {% csrf_token %}
+    Company Name:<input type="text" name="company_name1"><br/>
+    Company Location:<input type="text" name="company_location1" ><br/>
+   <input type="submit" value="submit">
+
+</form>
+
+
+        </div>
+
+        <!-- Modal footer -->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+
+            </th>
+            <th><button data-id="{{ c.id }}" class="delete-button">Delete</button></th>
         </tr>
         {% endfor %}
-    </table>
-    {% else %}
-        <h1>No Company Yet!</h1>
+      </tbody>
+  </table>
+
     {% endif %}
 
 
@@ -69,7 +104,9 @@
 
 
 
+ <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js"></script>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js"></script>
 
 
 
@@ -78,31 +115,94 @@
 
     $(document).ready(function(){
 
+
          $('#myform').submit(function(event){
             event.preventDefault();
             console.log("jhsdgfj");
-            var tmp_id = $(this).data('id');
+
         $.ajax({
          type:$('#myform').attr('method'),
-         url:$('#myform').attr('action') + '?id=' + tmp_id,
+         url:$('#myform').attr('action'),
          data:$('#myform').serialize(),
          success: function (data) {
-                $("#mytable").append('<tr><th>'+ data.company_name + '</th><th>'+data.company_location+'</th><th><a href=""><button>'+'Update'+'</button></a></th><th><a href=""><button>'+'Delete'+'</button></a></th></tr>');
+                var id = data.id;
+                <!--console.log(id);-->
+                $("#mytable").append('<tr><th>'+ data.company_name + '</th><th>'+data.company_location+'</th><th><button type="button" class="update" data-toggle="modal" data-target="#myModal" data-id="' + id +'">'+'Update'+'</button></th><th><button class="delete-button" data-id="' + id +'">' + 'Delete'+'</button></th></tr>');
 
          },
 
-             error: function(xhr){
-            alert("An error occured: " + xhr.status + " " + xhr.statusText);
-            console.log(url);
-},
-
-         });
-         });
-         });
 
 
+         });
+    });
+        $('.update').click(function(){
+            var id = $(this).data('id');
+            var abc=$(this);
+            <!--console.log(id);-->
+            var compnames=$(this).parent().siblings("th.compname").text();
+            var compdesign=$(this).parent().siblings("th.compdesig").text();
+            console.log(compnames);
+            console.log(compdesign);
+            console.log("dsgsd");
+
+            $("input[name='company_name1']").val(compnames);
+            $("input[name='company_location1']").val(compdesign);
+
+        $('#myform1').submit(function(ev){
+            ev.preventDefault();
+            $.ajax({
+                type:"POST",
+                url:'update/'+id+'/',
+                data:$('#myform1').serialize(),
+                success:function(data){
+
+                var cde=$(abc).parents("tr");
+                $(abc).parents("tr").empty();
+
+                var id=data.id;
+                $(cde).append('<th>'+ data.company_name + '</th><th>'+data.company_location+'</th><th><button type="button" class="update" data-toggle="modal" data-target="#myModal1" data-id="' + id +'">'+'Update'+'</button></th><th><button class="delete-button" data-id="' + id +'">' + 'Delete'+'</button></th>');
+
+
+
+
+
+                },
+
+
+
+
+            });
+
+});
+
+        });
+
+
+    });
+
+
+$(function(){
+    $('#mytable').on('click', '.delete-button', function(){
+        var id = $(this).data('id');
+         var thisBtn = $(this);
+        $.ajax({
+            type:"DELETE",
+            data: { 'id' : id },
+            url:'delete/'+ id + '/',
+            beforeSend: function(xhr) {
+                xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}" );
+                },
+            success: function(data){
+                $(thisBtn).parents('tr').remove();
+            },
+        });
+    });
+});
 
 
 </script>
 
 </html>
+ <!--'delete/'+ '?id=' + tmp_id,-->
+<!--'delete/'+ '?id=' + tmp_id+'/',-->
+<!--<div class="modal" id="myModal1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h4 class="modal-title">Modal Form</h4><button type="button" class="close" data-dismiss="modal">&times;</button></div><div class="modal-body"><form method="POST" action="create/" id="myform1">{% csrf_token %}Company Name:<input type="text" name="company_name"><br/>Company Location:<input type="text" name="company_location"><br/><input type="submit" value="submit"></form></div><div class="modal-footer"><button type="button" class="btn btn-danger" data-dismiss="modal">Close</button></div></div></div></div>-->
